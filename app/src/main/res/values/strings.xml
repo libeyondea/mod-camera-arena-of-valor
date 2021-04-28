@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Mod Camera (Beta test)</string>
+    <string name="dowload_plugins">Dowload and update plugins</string>
+    <string name="delete_plugins">Delete plugins</string>
+    <string name="install_plugins">Install plugins</string>
+    <string name="percent">Choose a percent</string>
+    <string name="text_link"><a href="https://de4thzone.com/">De4thZone.Com</a></string>
+    <string name="text_link_fb"><a href="https://www.facebook.com/d4z.d4z.d4z.d4z/">FB: Nguyễn Thức</a></string>
+    <string-array name="percent">
+        <item>20%</item>
+        <item>30%</item>
+        <item>Updating...</item>
+    </string-array>
+</resources>
