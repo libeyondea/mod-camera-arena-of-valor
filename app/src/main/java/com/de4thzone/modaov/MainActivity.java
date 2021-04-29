@@ -1,4 +1,4 @@
-package com.de4thzone.app_aov;
+package com.de4thzone.modaov;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -7,30 +7,29 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
-import android.app.Activity;
-import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.FileUtils;
 import android.os.PowerManager;
+import android.provider.Settings;
 import android.text.method.LinkMovementMethod;
-import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -38,12 +37,16 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.net.ssl.HttpsURLConnection;
 
 public class MainActivity extends AppCompatActivity {
     // Progress Dialog
@@ -61,90 +64,135 @@ public class MainActivity extends AppCompatActivity {
             "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/version.d4z"
     };
 
-    String versionText = "";
+    private String versionText = "";
+
+    private static int VersionNow = 111;
+
+    private static String[] urlCheckVersion = { "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/version-app.d4z" };
+
+    private static String urlUpdateApp = "https://mega.nz/folder/C6YWwLjK#gdJjHF_OmmvQYJ1sa0sVQA";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        mContext = getApplicationContext();
 
         checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, STORAGE_PERMISSION_CODE);
 
-        TextView tl = (TextView) findViewById(R.id.text_link);
-        tl.setMovementMethod(LinkMovementMethod.getInstance());
+        if (!isNetworkConnected() && !isInternetAvailable()) {
+            //we are connected to a network
+            AlertDialog dialogUp = new AlertDialog.Builder(MainActivity.this)
+                    .setTitle("Please connect internet")
+                    .setNegativeButton("OK", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            try {
+                                startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS));
+                                finish();
+                            } catch (Exception e) {
+                                Toast.makeText(MainActivity.this, e.toString(), Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }).setCancelable(false)
+                    .create();
+            dialogUp.show();
+        } else {
+            setContentView(R.layout.activity_main);
+            mContext = getApplicationContext();
 
-        TextView tlfb = (TextView) findViewById(R.id.text_link_fb);
-        tlfb.setMovementMethod(LinkMovementMethod.getInstance());
+            new checkNewVersionApp(MainActivity.this).execute(urlCheckVersion);
 
-        mProgressDialog = new ProgressDialog(MainActivity.this);
-        mProgressDialog.setTitle("Dowload and update plugins");
-        mProgressDialog.setMessage("Downloading file ");
-        mProgressDialog.setIndeterminate(true);
-        mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        mProgressDialog.setCancelable(false);
-        mProgressDialog.setCanceledOnTouchOutside(false);
+            TextView tl = (TextView) findViewById(R.id.text_link);
+            tl.setMovementMethod(LinkMovementMethod.getInstance());
 
-        dialogIns = new ProgressDialog(MainActivity.this);
-        dialogIns.setTitle("Installing plugins");
-        dialogIns.setIndeterminate(true);
-        dialogIns.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        dialogIns.setCancelable(false);
-        dialogIns.setCanceledOnTouchOutside(false);
+            TextView tlfb = (TextView) findViewById(R.id.text_link_fb);
+            tlfb.setMovementMethod(LinkMovementMethod.getInstance());
 
-        dowload_plugins = findViewById(R.id.dowload_plugins);
-        delete_plugins = findViewById(R.id.delete_plugins);
+            mProgressDialog = new ProgressDialog(MainActivity.this);
+            mProgressDialog.setTitle("Download and update plugins");
+            mProgressDialog.setMessage("Downloading file ");
+            mProgressDialog.setIndeterminate(true);
+            mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            mProgressDialog.setCancelable(false);
+            mProgressDialog.setCanceledOnTouchOutside(false);
 
-        //get the spinner from the xml.
-        addItemsOnSpinnerPercent();
-        addListenerOnInsPlu();
+            dialogIns = new ProgressDialog(MainActivity.this);
+            dialogIns.setTitle("Installing plugins");
+            dialogIns.setIndeterminate(true);
+            dialogIns.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            dialogIns.setCancelable(false);
+            dialogIns.setCanceledOnTouchOutside(false);
 
-        dowload_plugins.setOnClickListener(new View.OnClickListener() {
+            dowload_plugins = findViewById(R.id.dowload_plugins);
+            delete_plugins = findViewById(R.id.delete_plugins);
+
+            //get the spinner from the xml.
+            addItemsOnSpinnerPercent();
+            addListenerOnInsPlu();
+
+            dowload_plugins.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                final DownloadTask downloadTask = new DownloadTask(MainActivity.this);
-                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
-                    // Requesting the permission
-                    ActivityCompat.requestPermissions(MainActivity.this,
-                            new String[] { Manifest.permission.WRITE_EXTERNAL_STORAGE },
-                            STORAGE_PERMISSION_CODE);
-                } else {
-                    AlertDialog dialog = new AlertDialog.Builder(MainActivity.this)
-                            .setTitle("Do you want to download plugins?")
+                if (!isNetworkConnected() && !isInternetAvailable()) {
+                    //we are connected to a network
+                    AlertDialog dialogUp = new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("Please connect internet")
                             .setNegativeButton("OK", new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialogInterface, int i) {
-                                    downloadTask.execute(file_url);
-                                    Toast.makeText(MainActivity.this,
-                                            "Permission already granted",
-                                            Toast.LENGTH_SHORT)
-                                            .show();
+                                    try {
+                                        startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS));
+                                        finish();
+                                    } catch (Exception e) {
+                                        Toast.makeText(MainActivity.this, e.toString(), Toast.LENGTH_SHORT).show();
+                                    }
                                 }
-                            }).setPositiveButton("Cancel", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                }
-                            })
+                            }).setCancelable(false)
                             .create();
-                    dialog.show();
+                    dialogUp.show();
+                } else {
+                    final DownloadTask downloadTask = new DownloadTask(MainActivity.this);
+                    if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
+                        // Requesting the permission
+                        ActivityCompat.requestPermissions(MainActivity.this,
+                                new String[] { Manifest.permission.WRITE_EXTERNAL_STORAGE },
+                                STORAGE_PERMISSION_CODE);
+                    } else {
+                        AlertDialog dialog = new AlertDialog.Builder(MainActivity.this)
+                                .setTitle("Do you want to download plugins?")
+                                .setNegativeButton("OK", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        downloadTask.execute(file_url);
+                                        Toast.makeText(MainActivity.this,
+                                                "Permission already granted",
+                                                Toast.LENGTH_SHORT)
+                                                .show();
+                                    }
+                                }).setPositiveButton("Cancel", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                    }
+                                })
+                                .create();
+                        dialog.show();
+                    }
+                    mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+                        @Override
+                        public void onCancel(DialogInterface dialog) {
+                            downloadTask.cancel(true); //cancel the task
+                        }
+                    });
+                    mProgressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, "Cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            downloadTask.cancel(true); //cancel the task
+                        }
+                    });
                 }
-                mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-                    @Override
-                    public void onCancel(DialogInterface dialog) {
-                        downloadTask.cancel(true); //cancel the task
-                    }
-                });
-                mProgressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, "Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        downloadTask.cancel(true); //cancel the task
-                    }
-                });
-
             }
         });
 
-        delete_plugins.setOnClickListener(new View.OnClickListener() {
+            delete_plugins.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
@@ -179,7 +227,115 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+        }
     }
+
+    private boolean isNetworkConnected() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        return cm.getActiveNetworkInfo() != null && cm.getActiveNetworkInfo().isConnected();
+    }
+
+    public boolean isInternetAvailable() {
+        try {
+            InetAddress ipAddr = InetAddress.getByName("github.com");
+            //You can replace it with your name
+            return !ipAddr.equals("");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private class checkNewVersionApp extends AsyncTask<String, Integer, String> {
+        private Context context;
+        private PowerManager.WakeLock mWakeLock;
+        public checkNewVersionApp(Context context) {
+            this.context = context;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+                    getClass().getName());
+            mWakeLock.acquire();
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... progress) {
+            super.onProgressUpdate(progress);
+        }
+        @Override
+        protected String doInBackground(String... sUrl) {
+            try {
+                // Create a URL for the desired page
+                URL urlCheck = new URL(sUrl[0]);
+                // Read all the text returned by the server
+                HttpURLConnection conn = (HttpURLConnection) urlCheck.openConnection();
+                conn.connect();
+                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                String str;
+                String outPut = "";
+                while ((str = in.readLine()) != null) {
+                    outPut = str;
+                }
+                in.close();
+                return outPut;
+            } catch (MalformedURLException e) {
+                return e.toString();
+            } catch (IOException e) {
+                return e.toString();
+            }
+        }
+        protected void onPostExecute(String result) {
+            mWakeLock.release();
+            Toast.makeText(context,"Data: " + result, Toast.LENGTH_LONG).show();
+            // dismiss progress dialog and update ui
+            try {
+                if (!isNetworkConnected() && !isInternetAvailable()) {
+                    //we are connected to a network
+                    AlertDialog dialogUp = new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("Please connect internet")
+                            .setNegativeButton("OK", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    try {
+                                        startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS));
+                                        finish();
+                                    } catch (Exception e) {
+                                        Toast.makeText(MainActivity.this, e.toString(), Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+                            }).setCancelable(false)
+                            .create();
+                    dialogUp.show();
+                } else if (Integer.parseInt(result) > VersionNow) {
+                    AlertDialog dialogUp = new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("Please download new version now")
+                            .setNegativeButton("Download", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    try {
+                                        Uri uri = Uri.parse(urlUpdateApp);
+                                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                                        startActivity(intent);
+                                        finish();
+                                    } catch (Exception e) {
+                                        Toast.makeText(MainActivity.this, e.toString(), Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+                            }).setCancelable(false)
+                            .create();
+                    dialogUp.show();
+                }
+            } catch (Exception e) {
+                Toast.makeText(context,"ERROR: " + e.toString(), Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
 
     public static Context getContext() {
         return mContext;
@@ -217,7 +373,7 @@ public class MainActivity extends AppCompatActivity {
                 File check_file_1 = new File(mContext.getExternalFilesDir(null) + "/1/1.d4z");
                 File check_file_2 = new File(mContext.getExternalFilesDir(null) + "/2/2.d4z");
                 File check_file_3 = new File(mContext.getExternalFilesDir(null) + "/3/3.d4z");
-                if(!check_file_0.exists() || !check_file_1.exists() || !check_file_2.exists() || !check_file_3.exists()) {
+                if (!check_file_0.exists() || !check_file_1.exists() || !check_file_2.exists() || !check_file_3.exists()) {
                     AlertDialog dialoggg = new AlertDialog.Builder(MainActivity.this)
                             .setTitle("Please download plugins")
                             .setNegativeButton("OK", new DialogInterface.OnClickListener() {
@@ -228,41 +384,37 @@ public class MainActivity extends AppCompatActivity {
                             .create();
                     dialoggg.show();
                     return;
-                }
-                AlertDialog dialog = new AlertDialog.Builder(MainActivity.this)
-                        .setTitle("Do you want to install plugins?")
-                        .setNegativeButton("OK", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                File version_text = new File(mContext.getExternalFilesDir(null) + "/3/3.d4z");
-                                try {
-                                    BufferedReader br = new BufferedReader(new FileReader(version_text));
-                                    String strLine;
-                                    while ((strLine = br.readLine()) != null){
-                                        versionText = strLine;
+                } else {
+                    AlertDialog dialog = new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("Do you want to install plugins?")
+                            .setNegativeButton("OK", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    File version_text = new File(mContext.getExternalFilesDir(null) + "/3/3.d4z");
+                                    try {
+                                        BufferedReader br = new BufferedReader(new FileReader(version_text));
+                                        String strLine;
+                                        while ((strLine = br.readLine()) != null) {
+                                            versionText = strLine;
+                                        }
+                                        br.close();
+                                        Toast.makeText(MainActivity.this, versionText, Toast.LENGTH_SHORT).show();
+                                    } catch (IOException e) {
+                                        Toast.makeText(MainActivity.this, e.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
                                     }
-                                    Toast.makeText(MainActivity.this, versionText, Toast.LENGTH_SHORT).show();
-                                } catch (IOException e) {
-                                    Toast.makeText(MainActivity.this, e.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
-                                }
-                                String[] dir_copy1 = {
-                                        "/0/0.d4z",
-                                        "/Android/data/com.garena.game.kgvn/files/Resources/" + versionText + "/AssetBundle/Scene/0.d4z"
-                                };
-                                String[] dir_copy2 = {
-                                        "/1/1.d4z",
-                                        "/Android/data/com.garena.game.kgvn/files/Resources/" + versionText + "/AssetBundle/Scene/1.d4z"
-                                };
-                                String[] dir_copy3 = {
-                                        "/2/2.d4z",
-                                        "/Android/data/com.garena.game.kgvn/files/Resources/" + versionText + "/AssetBundle/Scene/2.d4z"
-                                };
-                                final CopyandList copyfile = new CopyandList(MainActivity.this);
-
-                                File plugins_check1 = new File(mContext.getExternalFilesDir(null) + dir_copy1[0]);
-                                File plugins_check2 = new File(mContext.getExternalFilesDir(null) + dir_copy2[0]);
-                                File plugins_check3 = new File(mContext.getExternalFilesDir(null) + dir_copy3[0]);
-                                if(plugins_check1.exists() && plugins_check2.exists() && plugins_check3.exists()) {
+                                    String[] dir_copy1 = {
+                                            "/0/0.d4z",
+                                            "/Android/data/com.garena.game.kgvn/files/Resources/" + versionText + "/AssetBundle/Scene/0.d4z"
+                                    };
+                                    String[] dir_copy2 = {
+                                            "/1/1.d4z",
+                                            "/Android/data/com.garena.game.kgvn/files/Resources/" + versionText + "/AssetBundle/Scene/1.d4z"
+                                    };
+                                    String[] dir_copy3 = {
+                                            "/2/2.d4z",
+                                            "/Android/data/com.garena.game.kgvn/files/Resources/" + versionText + "/AssetBundle/Scene/2.d4z"
+                                    };
+                                    final CopyandList copyfile = new CopyandList(MainActivity.this);
                                     switch (spinner_percent.getSelectedItemPosition()) {
                                         case 0:
                                             AlertDialog dialog = new AlertDialog.Builder(MainActivity.this)
@@ -285,26 +437,16 @@ public class MainActivity extends AppCompatActivity {
                                             copyfile.execute(dir_copy3);
                                             break;
                                     }
-                                } else {
-                                    AlertDialog dialog_err = new AlertDialog.Builder(MainActivity.this)
-                                            .setTitle("Please install the plugin")
-                                            .setNegativeButton("OK", new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialogInterface, int i) {
-                                                }
-                                            })
-                                            .create();
-                                    dialog_err.show();
-                                }
 
-                            }
-                        }).setPositiveButton("Cancel", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                            }
-                        })
-                        .create();
-                dialog.show();
+                                }
+                            }).setPositiveButton("Cancel", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                }
+                            })
+                            .create();
+                    dialog.show();
+                }
             }
         });
     }
