@@ -77,18 +77,6 @@ public class MainActivity extends AppCompatActivity {
         TextView tlfb = (TextView) findViewById(R.id.text_link_fb);
         tlfb.setMovementMethod(LinkMovementMethod.getInstance());
 
-        File version_text = new File(mContext.getExternalFilesDir(null) + "/3/3.d4z");
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(version_text));
-            String strLine;
-            while ((strLine = br.readLine()) != null){
-                versionText = versionText + strLine;
-            }
-            Toast.makeText(MainActivity.this, versionText, Toast.LENGTH_SHORT).show();
-        } catch (IOException e) {
-            Toast.makeText(MainActivity.this, e.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
-        }
-
         mProgressDialog = new ProgressDialog(MainActivity.this);
         mProgressDialog.setTitle("Dowload and update plugins");
         mProgressDialog.setMessage("Downloading file ");
@@ -220,30 +208,57 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void addListenerOnInsPlu() {
-        String[] dir_copy1 = {
-                "/0/0.d4z",
-                "/Android/data/com.garena.game.kgvn/files/Resources/" + versionText + "/AssetBundle/Scene/0.d4z"
-        };
-        String[] dir_copy2 = {
-                "/1/1.d4z",
-                "/Android/data/com.garena.game.kgvn/files/Resources/" + versionText + "/AssetBundle/Scene/1.d4z"
-        };
-        String[] dir_copy3 = {
-                "/2/2.d4z",
-                "/Android/data/com.garena.game.kgvn/files/Resources/" + versionText + "/AssetBundle/Scene/2.d4z"
-        };
-
         spinner_percent = (Spinner) findViewById(R.id.spinner_percent);
         install_plugins = (Button) findViewById(R.id.install_plugins);
         install_plugins.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final CopyandList copyfile = new CopyandList(MainActivity.this);
+                File check_file_0 = new File(mContext.getExternalFilesDir(null) + "/0/0.d4z");
+                File check_file_1 = new File(mContext.getExternalFilesDir(null) + "/1/1.d4z");
+                File check_file_2 = new File(mContext.getExternalFilesDir(null) + "/2/2.d4z");
+                File check_file_3 = new File(mContext.getExternalFilesDir(null) + "/3/3.d4z");
+                if(!check_file_0.exists() || !check_file_1.exists() || !check_file_2.exists() || !check_file_3.exists()) {
+                    AlertDialog dialoggg = new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("Please download plugins")
+                            .setNegativeButton("OK", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                }
+                            })
+                            .create();
+                    dialoggg.show();
+                    return;
+                }
                 AlertDialog dialog = new AlertDialog.Builder(MainActivity.this)
                         .setTitle("Do you want to install plugins?")
                         .setNegativeButton("OK", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
+                                File version_text = new File(mContext.getExternalFilesDir(null) + "/3/3.d4z");
+                                try {
+                                    BufferedReader br = new BufferedReader(new FileReader(version_text));
+                                    String strLine;
+                                    while ((strLine = br.readLine()) != null){
+                                        versionText = strLine;
+                                    }
+                                    Toast.makeText(MainActivity.this, versionText, Toast.LENGTH_SHORT).show();
+                                } catch (IOException e) {
+                                    Toast.makeText(MainActivity.this, e.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
+                                }
+                                String[] dir_copy1 = {
+                                        "/0/0.d4z",
+                                        "/Android/data/com.garena.game.kgvn/files/Resources/" + versionText + "/AssetBundle/Scene/0.d4z"
+                                };
+                                String[] dir_copy2 = {
+                                        "/1/1.d4z",
+                                        "/Android/data/com.garena.game.kgvn/files/Resources/" + versionText + "/AssetBundle/Scene/1.d4z"
+                                };
+                                String[] dir_copy3 = {
+                                        "/2/2.d4z",
+                                        "/Android/data/com.garena.game.kgvn/files/Resources/" + versionText + "/AssetBundle/Scene/2.d4z"
+                                };
+                                final CopyandList copyfile = new CopyandList(MainActivity.this);
+
                                 File plugins_check1 = new File(mContext.getExternalFilesDir(null) + dir_copy1[0]);
                                 File plugins_check2 = new File(mContext.getExternalFilesDir(null) + dir_copy2[0]);
                                 File plugins_check3 = new File(mContext.getExternalFilesDir(null) + dir_copy3[0]);
@@ -290,7 +305,6 @@ public class MainActivity extends AppCompatActivity {
                         })
                         .create();
                 dialog.show();
-
             }
         });
     }
