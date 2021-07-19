@@ -11,7 +11,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 30
         versionCode 1
-        versionName "1.1.2"
+        versionName "1.1.3"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         setProperty("archivesBaseName", "mod-arena-of-valor" + "-v" + versionCode + "(" + versionName + ")")
     }
@@ -28,6 +28,19 @@ android {
     }
 }
 
+apply plugin: 'stringfog'
+
+stringfog {
+    // 这是加解密key，可以自由定义。
+    key 'de4thzone'
+    // 开关
+    enable true
+    // 加解密库的实现类路径，需和上面配置的加解密算法库一致。
+    implementation 'com.github.megatronking.stringfog.xor.StringFogImpl'
+    // 指定需加密的代码包路径，可配置多个，未指定将默认全部加密。
+    //fogPackages = ['com.xxx.xxx']
+}
+
 dependencies {
 
     implementation 'androidx.appcompat:appcompat:1.2.0'
@@ -36,4 +49,6 @@ dependencies {
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+    // 这里要和上面选用的加解密算法库一致，用于运行时解密。
+    implementation 'com.github.megatronking.stringfog:xor:1.1.0'
 }

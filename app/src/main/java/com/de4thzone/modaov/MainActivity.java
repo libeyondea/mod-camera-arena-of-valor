@@ -17,7 +17,6 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.text.method.LinkMovementMethod;
@@ -31,6 +30,8 @@ import android.widget.Toast;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,6 +43,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 public class MainActivity extends AppCompatActivity {
     private static Context mContext;
@@ -55,37 +58,35 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private static String[] file_url_default = {
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/default/Born.xml",
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/default/Height.xml",
+            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/default/d4z.zip"
+    };
+
+    private static String[] file_url_7 = {
+            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/7percent/d4z.zip"
     };
 
     private static String[] file_url_10 = {
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/10percent/Born.xml",
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/10percent/Height.xml",
+            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/10percent/d4z.zip"
     };
 
     private static String[] file_url_15 = {
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/15percent/Born.xml",
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/15percent/Height.xml",
+            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/15percent/d4z.zip"
     };
 
     private static String[] file_url_20 = {
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/20percent/Born.xml",
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/20percent/Height.xml",
+            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/20percent/d4z.zip",
     };
     private static String[] file_url_25 = {
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/25percent/Born.xml",
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/25percent/Height.xml",
+            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/25percent/d4z.zip"
     };
 
     private static String[] file_url_30 = {
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/30percent/Born.xml",
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/30percent/Height.xml",
+            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/30percent/d4z.zip"
     };
 
     private String versionText = "";
 
-    private static int VersionNow = 112;
+    private static int VersionNow = 113;
 
     private static String[] urlCheckVersion = { "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/version-app.d4z" };
 
@@ -123,6 +124,11 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private String targetDownload(String versionText) {
+        String temp = "/Android/data/com.garena.game.kgvn/files/Resources/" + versionText +"/Ages/Prefab_Characters/Prefab_Hero";
+        return temp;
+    }
+
     private class DownloadTask extends AsyncTask<String, Integer, String> {
         private Context context;
         private int count = 1;
@@ -138,10 +144,10 @@ public class MainActivity extends AppCompatActivity {
             OutputStream output = null;
             HttpURLConnection connection = null;
 
-            File sdCardRoot = new File(Environment.getExternalStorageDirectory() + "/Android/data/com.garena.game.kgvn/files/Resources/" + versionText +"/Ages/Prefab_Characters/Prefab_Hero/commonresource");
-            if (!sdCardRoot.exists()) {
-                sdCardRoot.mkdirs();
-            }
+            //File sdCardRoot = new File(Environment.getExternalStorageDirectory() + "/Android/data/com.garena.game.kgvn/files/Resources/" + versionText +"/Ages/Prefab_Characters/Prefab_Hero/commonresource");
+            //if (!sdCardRoot.exists()) {
+            //    sdCardRoot.mkdirs();
+            //}
 
             for (int i = 0; i < sUrl.length; i++) {
                 try {
@@ -163,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
                     // download the file
                     input = connection.getInputStream();
 
-                    File saveFolder = new File(Environment.getExternalStorageDirectory() + "/Android/data/com.garena.game.kgvn/files/Resources/" + versionText +"/Ages/Prefab_Characters/Prefab_Hero/commonresource/" + getFileNameFromURL(url.toString()));
+                    File saveFolder = new File(Environment.getExternalStorageDirectory() + targetDownload(versionText) + "/" + getFileNameFromURL(url.toString()));
                     output = new FileOutputStream(saveFolder);
 
                     byte data[] = new byte[4096];
@@ -181,6 +187,13 @@ public class MainActivity extends AppCompatActivity {
                             publishProgress((int) (total * 100 / fileLength));
                         output.write(data, 0, count);
                     }
+
+                    unzip(saveFolder, new File(Environment.getExternalStorageDirectory() + targetDownload(versionText)));
+
+                    if (saveFolder.exists()) {
+                        saveFolder.delete();
+                    }
+
                 } catch (Exception e) {
                     return e.toString();
                 } finally {
@@ -357,6 +370,7 @@ public class MainActivity extends AppCompatActivity {
         List<String> list = new ArrayList<String>();
         list.add("Select percent");
         list.add("Default");
+        list.add("7%");
         list.add("10%");
         list.add("15%");
         list.add("20%");
@@ -403,7 +417,7 @@ public class MainActivity extends AppCompatActivity {
                                         });
                                         break;
                                     case 2:
-                                        downloadTask.execute(file_url_10);
+                                        downloadTask.execute(file_url_7);
                                         mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
                                             @Override
                                             public void onCancel(DialogInterface dialog) {
@@ -412,7 +426,7 @@ public class MainActivity extends AppCompatActivity {
                                         });
                                         break;
                                     case 3:
-                                        downloadTask.execute(file_url_15);
+                                        downloadTask.execute(file_url_10);
                                         mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
                                             @Override
                                             public void onCancel(DialogInterface dialog) {
@@ -421,7 +435,7 @@ public class MainActivity extends AppCompatActivity {
                                         });
                                         break;
                                     case 4:
-                                        downloadTask.execute(file_url_20);
+                                        downloadTask.execute(file_url_15);
                                         mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
                                             @Override
                                             public void onCancel(DialogInterface dialog) {
@@ -430,7 +444,7 @@ public class MainActivity extends AppCompatActivity {
                                         });
                                         break;
                                     case 5:
-                                        downloadTask.execute(file_url_25);
+                                        downloadTask.execute(file_url_20);
                                         mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
                                             @Override
                                             public void onCancel(DialogInterface dialog) {
@@ -439,6 +453,15 @@ public class MainActivity extends AppCompatActivity {
                                         });
                                         break;
                                     case 6:
+                                        downloadTask.execute(file_url_25);
+                                        mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+                                            @Override
+                                            public void onCancel(DialogInterface dialog) {
+                                                downloadTask.cancel(true); //cancel the task
+                                            }
+                                        });
+                                        break;
+                                    case 7:
                                         downloadTask.execute(file_url_30);
                                         mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
                                             @Override
@@ -578,6 +601,39 @@ public class MainActivity extends AppCompatActivity {
         // calculate the end index
         int endIndex = Math.min(lastQMPos, lastHashPos);
         return url.substring(startIndex, endIndex);
+    }
+
+    public static void unzip(File zipFile, File targetDirectory) throws IOException {
+        ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zipFile)));
+        try {
+            ZipEntry ze;
+            int count;
+            byte[] buffer = new byte[8192];
+            while ((ze = zis.getNextEntry()) != null) {
+                File file = new File(targetDirectory, ze.getName());
+                File dir = ze.isDirectory() ? file : file.getParentFile();
+                if (!dir.isDirectory() && !dir.mkdirs())
+                {
+                    Toast.makeText(mContext, "Failed to ensure directory: " + dir.getAbsolutePath(), Toast.LENGTH_SHORT).show();
+                }
+                if (ze.isDirectory())
+                    continue;
+                FileOutputStream fout = new FileOutputStream(file);
+                try {
+                    while ((count = zis.read(buffer)) != -1)
+                        fout.write(buffer, 0, count);
+                } finally {
+                    fout.close();
+                }
+            /* if time should be restored as well
+            long time = ze.getTime();
+            if (time > 0)
+                file.setLastModified(time);
+            */
+            }
+        } finally {
+            zis.close();
+        }
     }
 
 }
