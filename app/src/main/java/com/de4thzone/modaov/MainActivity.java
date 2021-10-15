@@ -54,41 +54,41 @@ public class MainActivity extends AppCompatActivity {
     private static final int STORAGE_PERMISSION_CODE = 101;
 
     private static String[] file_url_version = {
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/version.d4z"
+            "https://github.com/libeyondea/mod-camera-arena-of-valor-server/raw/main/version.d4z"
     };
 
     private static String[] file_url_default = {
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/default/d4z.zip"
+            "https://github.com/libeyondea/mod-camera-arena-of-valor-server/raw/main/default/d4z.zip"
     };
 
     private static String[] file_url_7 = {
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/7percent/d4z.zip"
+            "https://github.com/libeyondea/mod-camera-arena-of-valor-server/raw/main/7percent/d4z.zip"
     };
 
     private static String[] file_url_10 = {
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/10percent/d4z.zip"
+            "https://github.com/libeyondea/mod-camera-arena-of-valor-server/raw/main/10percent/d4z.zip"
     };
 
     private static String[] file_url_15 = {
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/15percent/d4z.zip"
+            "https://github.com/libeyondea/mod-camera-arena-of-valor-server/raw/main/15percent/d4z.zip"
     };
 
     private static String[] file_url_20 = {
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/20percent/d4z.zip",
+            "https://github.com/libeyondea/mod-camera-arena-of-valor-server/raw/main/20percent/d4z.zip",
     };
     private static String[] file_url_25 = {
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/25percent/d4z.zip"
+            "https://github.com/libeyondea/mod-camera-arena-of-valor-server/raw/main/25percent/d4z.zip"
     };
 
     private static String[] file_url_30 = {
-            "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/30percent/d4z.zip"
+            "https://github.com/libeyondea/mod-camera-arena-of-valor-server/raw/main/30percent/d4z.zip"
     };
 
     private String versionText = "";
 
-    private static int VersionNow = 113;
+    private static int VersionNow = 114;
 
-    private static String[] urlCheckVersion = { "https://github.com/de4th-zone/mod-camera-arena-of-valor-server/raw/main/version-app.d4z" };
+    private static String[] urlCheckVersion = { "https://github.com/libeyondea/mod-camera-arena-of-valor-server/raw/main/version-app.d4z" };
 
     private static String urlUpdateApp = "https://mega.nz/folder/C6YWwLjK#gdJjHF_OmmvQYJ1sa0sVQA";
 
