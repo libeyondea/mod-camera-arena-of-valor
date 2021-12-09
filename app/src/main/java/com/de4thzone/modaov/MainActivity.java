@@ -95,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static String[] urlCheckVersion = { "https://github.com/libeyondea/mod-camera-arena-of-valor-server/raw/main/version-app.d4z" };
 
-    private String urlUpdateApp = "https://server-mod-aov.herokuapp.com/mod-arena-of-valor"  + "-v" + versionCode + "(" + versionName + ")" + "-release.apk";
+    private String urlUpdateApp = "https://server-mod-aov.herokuapp.com/mod-arena-of-valor-release.apk";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
