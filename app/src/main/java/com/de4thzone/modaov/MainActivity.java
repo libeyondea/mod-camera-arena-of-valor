@@ -1,5 +1,6 @@
 package com.de4thzone.modaov;
 
+import com.de4thzone.modaov.BuildConfig;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -86,11 +87,15 @@ public class MainActivity extends AppCompatActivity {
 
     private String versionText = "";
 
-    private static int VersionNow = 114;
+    private static int VersionNow = 115;
+
+    private int versionCode = BuildConfig.VERSION_CODE;
+
+    private String versionName = BuildConfig.VERSION_NAME;
 
     private static String[] urlCheckVersion = { "https://github.com/libeyondea/mod-camera-arena-of-valor-server/raw/main/version-app.d4z" };
 
-    private static String urlUpdateApp = "https://mega.nz/folder/C6YWwLjK#gdJjHF_OmmvQYJ1sa0sVQA";
+    private String urlUpdateApp = "https://server-mod-aov.herokuapp.com/mod-arena-of-valor"  + "-v" + versionCode + "(" + versionName + ")" + "-release.apk";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -127,6 +132,13 @@ public class MainActivity extends AppCompatActivity {
     private String targetDownload(String versionText) {
         String temp = "/Android/data/com.garena.game.kgvn/files/Resources/" + versionText +"/Ages/Prefab_Characters/Prefab_Hero";
         return temp;
+    }
+
+    private void deleteRecursive(File fileOrDirectory) {
+        if (fileOrDirectory.isDirectory())
+            for (File child : fileOrDirectory.listFiles())
+                deleteRecursive(child);
+        fileOrDirectory.delete();
     }
 
     private class DownloadTask extends AsyncTask<String, Integer, String> {
@@ -187,6 +199,10 @@ public class MainActivity extends AppCompatActivity {
                             publishProgress((int) (total * 100 / fileLength));
                         output.write(data, 0, count);
                     }
+
+                    deleteRecursive(new File(Environment.getExternalStorageDirectory() + targetDownload(versionText) + "/commonresource"));
+
+                    deleteRecursive(new File(Environment.getExternalStorageDirectory() + targetDownload(versionText) + "/Cam"));
 
                     unzip(saveFolder, new File(Environment.getExternalStorageDirectory() + targetDownload(versionText)));
 
